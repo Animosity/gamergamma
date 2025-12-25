@@ -43,7 +43,8 @@ NOTES:
 
 
 
-DEVELOPERS/DEBUGGING:  
+
+## FOR DEVELOPERS/DEBUGGING:  
 - The apply_presets() function is vital and is where compatibilty will absolutely break.
 Your pull requests are equally vital to universal support.
 
@@ -55,7 +56,7 @@ hardware gamma configuration (only using command 0x72 - Gamma) of the
 primary gaming monitor. Additionally, it is to adjust the digital vibrance
 dynamically for the color-challenged users.
 
-Architecture Notes/Flaws:
+### Architecture Notes/Flaws:
 * Destructive settings - Does not store original monitor configuration
 * nvibrant parameters are structured for the formatted output of (`nvibrant`)
   using a singular GPU RTX30XX-series presence with one HDMI and 3 DP outputs.
@@ -63,7 +64,7 @@ Architecture Notes/Flaws:
 * *FIXED 24DEC2025* -- NVIBRANT call doesn't use Monitor index (always #2)
 * NVIDIA-only support for vibrance control
 
-Development reference:
+### Development reference:
 - `Dell S2716DG` only uses the MSByte of the gamma value. 
 - Writing LSByte != 0x00 can cause CRC Verify errors.
 - The scheme of only writing MSByte has not been
@@ -86,7 +87,7 @@ Output of nvibrant ("Normal output" upon which its usage is based):
     
 
 
-  THEREFORE:
+  ### THEREFORE:
   - the command structure is: `nvibrant 0 <vibrance_monitor1> 0 <vibrance_monitor2> 0 <vibrance_monitor3>`
   - Vibrance value for the respective monitor index shall be inserted at position 2*index-1 in the command parameters.
 
