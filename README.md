@@ -55,7 +55,7 @@ Development reference:
     
 Output of nvibrant ("Normal output" upon which its usage is based):
     
-    ```
+    
     ❯ nvibrant
             Driver version: (580.105.08)
 
@@ -68,7 +68,7 @@ Output of nvibrant ("Normal output" upon which its usage is based):
             • (5, DP  ) • Set vibrance (    0) • Success
             • (6, DP  ) • Set vibrance (    0) • None
             busno=4. Monitor apparently returns -EIO for unsupported features. This cannot be relied on.
-    ```
+    
 
 
   THEREFORE:
