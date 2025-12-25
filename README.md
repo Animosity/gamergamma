@@ -1,7 +1,12 @@
 # gamergamma
 ## Developed with colorblind gamers in mind. 
-This tool provides user-configurable hotkeys to adjust the hardware (monitor) gamma and 
+This _Linux_ tool provides user-configurable hotkeys to adjust the hardware (monitor) gamma and 
 NVIDIA color/digital vibrance settings dynamically in any application. 
+
+Are you on _Windows_? Try one of these other apps for hotkey-able display settings in your games:
+- https://github.com/qlintenFX/KeyedColors
+- https://github.com/maxgodman/GammaHotkey
+- https://github.com/panicaz/tarkov-settings-fullscreen-hotkey 
 
 EXTERNAL DEPENDENCIES: [`ddcutil`](https://github.com/rockowitz/ddcutil), [`nvibrant-bin`](https://github.com/Tremeschin/nvibrant)
 
@@ -26,6 +31,7 @@ NOTES:
 - Developer test environment is LIMITED. Proven on CachyOS with KDE Plasma/Wayland,
   using applications launched via proton (e.g. Steam games), including using gamescope in 
   Steam game launch parameters.
+
 
 
 
