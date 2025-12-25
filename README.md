@@ -3,7 +3,7 @@
 This tool provides user-configurable hotkeys to adjust the hardware (monitor) gamma and 
 NVIDIA color/digital vibrance settings dynamically in any application. 
 
-EXTERNAL DEPENDENCIES: [`ddcutil` (for monitor/hardware gamma control)](https://github.com/rockowitz/ddcutil), [`nvibrant-bin` (NVIDIA-only)](https://github.com/Tremeschin/nvibrant)
+EXTERNAL DEPENDENCIES: [`ddcutil`](https://github.com/rockowitz/ddcutil), [`nvibrant-bin`](https://github.com/Tremeschin/nvibrant)
 
 **How to use:**
 1. Install external dependencies:
