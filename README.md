@@ -22,7 +22,7 @@ EXTERNAL DEPENDENCIES: [`ddcutil`](https://github.com/rockowitz/ddcutil), [`nvib
 4. Select your primary gaming display/monitor from the dropdown. 
 5. Adjust the gamma and/or vibrance sliders to your preference, and select Apply to test it.
 6. Select Save Preset to write the settings to local file (gg_presets.json)
-7. Click the **Preset # (<HotKey>)** title to reconfigure the preset's hotkey to your choice.
+7. Click the **Preset # (\<HotKey\>)** title to reconfigure the preset's hotkey to your choice.
 8. Use your hotkeys in any game/app of your choice.
 
 ![](https://private-user-images.githubusercontent.com/105494/530158312-52ee5ebc-fd68-4723-852e-b1b2dbdc751e.gif?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NjY2NDY1NzksIm5iZiI6MTc2NjY0NjI3OSwicGF0aCI6Ii8xMDU0OTQvNTMwMTU4MzEyLTUyZWU1ZWJjLWZkNjgtNDcyMy04NTJlLWIxYjJkYmRjNzUxZS5naWY_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjUxMjI1JTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI1MTIyNVQwNzA0MzlaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT02MGZjYTZhZThkOGFkODAwNGQ2NDMwNWJkYWYxNGM5YjU4MGFjYTc4ODM0OGZmODZjYTM0MmI1MGVkMjZkYWJmJlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCJ9.M_GATETZv7_teyyS6MKhaWnKKFlwwbgwBnvDt2s3OT8)
