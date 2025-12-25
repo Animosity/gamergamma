@@ -4,4 +4,4 @@ version = "0.1.0"
 description = "[Linux-only] Hotkey-adjustable gamma (hardware/monitor) & vibrance (NVidia), developed by and for colorblind gamers."
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = [ddcutil, nvibrant-bin]
+dependencies = [pynput>=1.8.1]
