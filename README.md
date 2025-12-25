@@ -81,6 +81,8 @@ Output of nvibrant ("Normal output" upon which its usage is based):
 
 
 ## TODO
-- non-destructive settings (save monitor's settings)
-- minimize to tray
-- better compatibility (need users)
+- quality: non-destructive settings (save monitor's settings)
+- polish: minimize to tray
+- flair: preset pane title reactions to global hotkey recognition
+- quality: better compatibility (need users)
+- 
