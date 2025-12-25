@@ -6,10 +6,12 @@ NVIDIA color/digital vibrance settings dynamically in any application.
 
 EXTERNAL DEPENDENCIES: ddcutil, nvibrant
 
-** How to use: **
-1. Install external dependencies:  	[ddcutil (for monitor/hardware gamma control)](https://github.com/rockowitz/ddcutil) , [nvibrant-bin (NVIDIA-only)](https://github.com/Tremeschin/nvibrant)
+**How to use:**
+1. Install external dependencies:
+   -  [`ddcutil` (for monitor/hardware gamma control)](https://github.com/rockowitz/ddcutil)
+   -  [`nvibrant-bin` (NVIDIA-only)](https://github.com/Tremeschin/nvibrant)
 2. Install python dependencies in your environment of choice (pip install -r requirements.txt)
-3. Run: python3 gamergamma.py (or, use the compiled binary from the Releases)
+3. Run: `python3 gamergamma.py` (or, use the compiled binary from the Releases)
 
 4. Select your primary gaming display/monitor from the dropdown. 
 5. Adjust the gamma and/or vibrance sliders to your preference, and select Apply to test it.
@@ -18,7 +20,7 @@ EXTERNAL DEPENDENCIES: ddcutil, nvibrant
 8. Use your hotkeys in any game/app of your choice.
 
 Advice:
-- Releases lazily packaged using pyinstaller --onefile
+- Releases lazily packaged using `pyinstaller --onefile`
 - Developer test environment is LIMITED. Proven on CachyOS with KDE Plasma/Wayland,
   using applications launched via proton (e.g. Steam games), including using gamescope in 
   Steam game launch parameters.
@@ -45,14 +47,17 @@ Problems:
 * NVIDIA-only support for vibrance control
 
 Notes:
--Dell S2716DG only uses the MSByte of the gamma value. 
+-`Dell S2716DG` only uses the MSByte of the gamma value. 
 -Writing LSByte != 0x00
 can cause CRC Verify errors. The scheme of only writing MSByte has not been
 tested on other monitors.
 
 Development reference:
-    Output of nvibrant ("Normal output" upon which its usage is based):
-        ❯ nvibrant
+    
+Output of nvibrant ("Normal output" upon which its usage is based):
+    
+    ```
+    ❯ nvibrant
             Driver version: (580.105.08)
 
             Display 0:
@@ -64,13 +69,13 @@ Development reference:
             • (5, DP  ) • Set vibrance (    0) • Success
             • (6, DP  ) • Set vibrance (    0) • None
             busno=4. Monitor apparently returns -EIO for unsupported features. This cannot be relied on.
+    ```
 
-    THEREFORE:
-        the command structure is: `nvibrant 0 <vibrance_monitor1> 0
-        <vibrance_monitor2> 0 <vibrance_monitor3>`
 
-        Vibrance value for the respective monitor index shall be
-        inserted at position 2*index-1 in the command parameters.
+  THEREFORE:
+  - the command structure is: `nvibrant 0 <vibrance_monitor1> 0 <vibrance_monitor2> 0 <vibrance_monitor3>`
+
+  - Vibrance value for the respective monitor index shall be inserted at position 2*index-1 in the command parameters.
 
         
 
