@@ -1,4 +1,3 @@
-"""
 # gamergamma
 ## Developed with colorblind gamers in mind. 
 This tool provides user-configurable hotkeys to adjust the hardware (monitor) gamma and 
@@ -74,12 +73,9 @@ Output of nvibrant ("Normal output" upon which its usage is based):
 
   THEREFORE:
   - the command structure is: `nvibrant 0 <vibrance_monitor1> 0 <vibrance_monitor2> 0 <vibrance_monitor3>`
-
   - Vibrance value for the respective monitor index shall be inserted at position 2*index-1 in the command parameters.
 
         
-
-
 ## TODO
 - quality: non-destructive settings (save monitor's settings)
 - polish: minimize to tray
