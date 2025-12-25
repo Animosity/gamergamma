@@ -56,7 +56,7 @@ hardware gamma configuration (only using command 0x72 - Gamma) of the
 primary gaming monitor. Additionally, it is to adjust the digital vibrance
 dynamically for the color-challenged users.
 
-### Architecture Notes/Flaws:
+### Architecture Notes/Limitations:
 * Destructive settings - Does not store original monitor configuration
 * nvibrant parameters are structured for the formatted output of (`nvibrant`)
   using a singular GPU RTX30XX-series presence with one HDMI and 3 DP outputs.
