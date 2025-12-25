@@ -1,7 +1,7 @@
 # gamergamma
 ## Developed with colorblind gamers in mind. 
-This _Linux_ tool provides user-configurable hotkeys to adjust the hardware (monitor) gamma and 
-NVIDIA color/digital vibrance settings dynamically in any application. 
+This _Linux_ tool provides **user-configurable hotkeys to adjust the hardware (monitor) gamma and 
+NVIDIA color/digital vibrance settings dynamically** in any application. 
 
 Are you on _Windows_? Try one of these other apps for hotkey-able display settings in your games:
 - https://github.com/qlintenFX/KeyedColors
