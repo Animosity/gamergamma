@@ -10,7 +10,7 @@ EXTERNAL DEPENDENCIES: ddcutil, nvibrant
    -  [`ddcutil` (for monitor/hardware gamma control)](https://github.com/rockowitz/ddcutil)
    -  [`nvibrant-bin` (NVIDIA-only)](https://github.com/Tremeschin/nvibrant)
 2. Install python dependencies in your environment of choice (pip install -r requirements.txt)
-3. Run: `python3 gamergamma.py` (or, use the compiled binary from the Releases)
+3. Run: `python3 gamergamma.py` (or, use the compiled binary from the [Releases](https://github.com/Animosity/gamergamma/releases))
 
 4. Select your primary gaming display/monitor from the dropdown. 
 5. Adjust the gamma and/or vibrance sliders to your preference, and select Apply to test it.
