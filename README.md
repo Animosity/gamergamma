@@ -60,7 +60,7 @@ dynamically for the color-challenged users.
 * Destructive settings - Does not store original monitor configuration
 * nvibrant parameters are structured for the formatted output of (`nvibrant`)
   using a singular GPU RTX30XX-series presence with one HDMI and 3 DP outputs.
-* ddcutil 0x72 value packing is tailored to Dell S2716DG (see Notes)
+* ddcutil 0x72 value packing is tailored to Dell S2716DG (see [Notes](https://github.com/Animosity/gamergamma/blob/37eb64f5cf4f18a2266d2499db231abb62b3e3b5/gamergamma.py#L111))
 * *FIXED 24DEC2025* -- NVIBRANT call doesn't use Monitor index (always #2)
 * NVIDIA-only support for vibrance control
 
