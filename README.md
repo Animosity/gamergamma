@@ -9,7 +9,6 @@ Are you on _Windows_? Try one of these other apps for hotkey-able display settin
 - https://github.com/panicaz/tarkov-settings-fullscreen-hotkey 
 
 
-EXTERNAL DEPENDENCIES: [`ddcutil`](https://github.com/rockowitz/ddcutil), [`nvibrant-bin`](https://github.com/Tremeschin/nvibrant)
 
 **How to use:**
 1. Install external dependencies:
