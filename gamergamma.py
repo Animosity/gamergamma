@@ -383,15 +383,6 @@ class PresetPane(ttk.Frame):
 # Hotkeys + Menu
 # ----------------------------
 
-def setup_hotkeys_old(container):
-    #try: keyboard.unhook_all_hotkeys()
-    #except Exception:
-    #    pass
-    for child in container.winfo_children():
-        if isinstance(child, PresetPane):
-            hk = child.presets[child.preset_id]["hotkey"]
-            keyboard.add_hotkey(hk, child.apply)
-
 def setup_hotkeys(container):
     global _hotkey_listener, _hotkey_map
 
@@ -428,7 +419,6 @@ def show_about():
     frame = ttk.Frame(win, padding=12)
     frame.pack(fill="both", expand=True)
 
-    # Author (clickable)
     author_label = ttk.Label(
         frame,
         text="Author: github.com/Animosity",
@@ -441,7 +431,6 @@ def show_about():
         lambda e: open_url("https://github.com/Animosity/gamergamma")
     )
 
-    # Body text (pre-requirements)
     body_text = (
         "By and for colorblind gamers (and allies).\nHow to use: Click the Preset # (<keybind>) title to configure the hotkey for the preset.\n\n"
         "Adjust and save the gamma and vibrance settings for each preset you want to use.\n\n"
@@ -486,7 +475,6 @@ def show_about():
         justify="left"
     ).pack(anchor="w")
 
-    # OK button
     ttk.Button(frame, text="OK", command=win.destroy).pack(pady=(10, 0))
 
 
