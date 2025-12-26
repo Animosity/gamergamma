@@ -30,7 +30,8 @@ Demo GIF
 
 `Gamma level changes not visible in gif due to hardware gamma adjustment, not software.`
 
-FAQ: **Will I get banned from \<game/service\> for using this?**
+FAQ: 
+- Question: **Will I get banned from \<game/service\> for using this?**
 - Answer: No. You will not be banned for using this tool, as it does not read or modify memory of any games/applications. Rather, it adjusts the hardware gamma setting of your selected monitor (in the same manner as your monitor OSD menu) and adjusts the color saturation ("digital vibance") of your graphics using the NVIDIA driver, just the same as in NVIDIA Control Panel.
 
 
