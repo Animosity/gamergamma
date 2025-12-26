@@ -8,7 +8,8 @@ Are you on _Windows_? Try one of these other apps for hotkey-able display settin
 - https://github.com/maxgodman/GammaHotkey
 - https://github.com/panicaz/tarkov-settings-fullscreen-hotkey 
 
-
+Don't care about hotkeying display settings? Just want to explore your display settings more closely?
+- You should check out: https://github.com/rockowitz/ddcui
 
 **How to use:**
 1. Install external dependencies:
