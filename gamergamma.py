@@ -7,7 +7,7 @@ import webbrowser
 from pynput import keyboard as pynput_keyboard
 
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 MAINTAINERS = ["Animosity"]
 
 CONFIG_FILE = "gg_presets.json"
@@ -16,10 +16,11 @@ _hotkey_listener = None
 _hotkey_map = {}
 
 DEFAULT_PRESETS = {
-    "1": {"display": 1, "gamma": 128, "vibrance": 0, "hotkey": "alt+1"},
-    "2": {"display": 1, "gamma": 0, "vibrance": 512, "hotkey": "alt+2"},
-    "3": {"display": 1, "gamma": 255, "vibrance": 1023, "hotkey": "alt+3"},
+    "1": {"display": 1, "gamma": 128, "vibrance": 0, "vibrance_mode": "nvidia", "hotkey": "alt+1"},
+    "2": {"display": 1, "gamma": 144, "vibrance": 512, "vibrance_mode": "nvidia", "hotkey": "alt+2"},
+    "3": {"display": 1, "gamma": 255, "vibrance": 1023, "vibrance_mode": "nvidia", "hotkey": "alt+3"},
 }
+
 
 # ----------------------------
 # Utility functions
@@ -218,27 +219,28 @@ class PresetPane(ttk.Frame):
         self.gamma_slider.set(self.gamma.get())
         self.gamma_slider.pack(side="left", expand=True, fill="x")
 
-        # ---- Vibrance ----
-        ttk.Label(self, text="Vibrance").pack(anchor="w", pady=(10, 0))
-        v_frame = ttk.Frame(self)
-        v_frame.pack(fill="x")
+       # ---- Vibrance Mode ----
+        ttk.Label(self, text="Vibrance Source").pack(anchor="w", pady=(10, 0))
 
-        self.vibrance = tk.IntVar(value=presets[self.preset_id]["vibrance"])
-
-        self.vib_entry = ttk.Entry(v_frame, width=6, textvariable=self.vibrance)
-        self.vib_entry.pack(side="right", padx=5)
-        self.vib_entry.bind("<Return>", self._sync_vib_entry)
-
-        self.vib_slider = ttk.Scale(
-            v_frame, from_=-1023, to=1023,
-            orient="horizontal",
-            command=self._sync_vib_slider
+        self.vibrance_mode = tk.StringVar(
+            value=presets[self.preset_id].get("vibrance_mode", "NVIDIA")
         )
-        self.vib_slider.set(self.vibrance.get())
-        self.vib_slider.pack(side="left", expand=True, fill="x")
 
-        ttk.Button(self, text="Save Preset", command=self.save).pack(pady=(15, 5))
-        ttk.Button(self, text="Apply Preset", command=self.apply).pack()
+        mode_frame = ttk.Frame(self)
+        mode_frame.pack(anchor="w", pady=(0, 5))
+
+        ttk.Radiobutton(
+            mode_frame, text="NVIDIA Digital Vibrance",
+            variable=self.vibrance_mode, value="nvidia",
+            command=self._update_vibrance_ui
+        ).pack(side="left")
+
+        ttk.Radiobutton(
+            mode_frame, text="Monitor Color Vibrance (DDC)",
+            variable=self.vibrance_mode, value="ddc",
+            command=self._update_vibrance_ui
+        ).pack(side="left", padx=(10, 0))
+
 
     # ---- Sync helpers ----
 
