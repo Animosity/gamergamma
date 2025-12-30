@@ -108,8 +108,7 @@ def check_linux_dependencies():
 
 
 
-
-def apply_preset(display, gamma, vibrance):
+def apply_preset(display, gamma, vibrance_mode, vibrance):
     """ README/FOLDME
     This function is vital and is where compatibilty will absolutely break.
     EXTERNAL DEPENDENCIES: ddcutil, nvibrant
@@ -161,7 +160,7 @@ def apply_preset(display, gamma, vibrance):
     global _deps
     # Apply monitor gamma via ddcutil if installed.
     # See Notes (1-2).
-    if _deps.get("nvibrant", {}).get("installed"):
+    if _deps.get("ddcutil", {}).get("installed"):
         subprocess.Popen([
             "ddcutil",
             "-d", str(display),
@@ -241,8 +240,51 @@ class PresetPane(ttk.Frame):
             command=self._update_vibrance_ui
         ).pack(side="left", padx=(10, 0))
 
+        self.vib_nvidia_frame = ttk.Frame(self)
+        self.vib_nvidia_frame.pack(fill="x")
+
+        self.vibrance = tk.IntVar(value=presets[self.preset_id]["vibrance"])
+
+        self.vib_entry = ttk.Entry(self.vib_nvidia_frame, width=6, textvariable=self.vibrance)
+        self.vib_entry.pack(side="right", padx=5)
+        self.vib_entry.bind("<Return>", self._sync_vib_entry)
+
+        self.vib_slider = ttk.Scale(
+            self.vib_nvidia_frame,
+            from_=-1023, to=1023,
+            orient="horizontal",
+            command=self._sync_vib_slider
+        )
+        self.vib_slider.set(self.vibrance.get())
+        self.vib_slider.pack(side="left", expand=True, fill="x")
+
+        self.vib_ddc_frame = ttk.Frame(self)
+
+        self.ddc_vibrance = tk.IntVar(value=presets[self.preset_id]["vibrance"])
+
+        self.ddc_entry = ttk.Entry(self.vib_ddc_frame, width=6, textvariable=self.ddc_vibrance)
+        self.ddc_entry.pack(side="right", padx=5)
+
+        self.ddc_slider = ttk.Scale(
+            self.vib_ddc_frame,
+            from_=0, to=63,   # typical DDC color saturation range
+            orient="horizontal",
+            command=lambda v: self.ddc_vibrance.set(int(float(v)))
+        )
+        self.ddc_slider.set(self.ddc_vibrance.get())
+        self.ddc_slider.pack(side="left", expand=True, fill="x")
+
+        self._update_vibrance_ui()
 
     # ---- Sync helpers ----
+    def _update_vibrance_ui(self):
+        if self.vibrance_mode.get() == "nvidia":
+            self.vib_ddc_frame.pack_forget()
+            self.vib_nvidia_frame.pack(fill="x")
+        else:
+            self.vib_nvidia_frame.pack_forget()
+            self.vib_ddc_frame.pack(fill="x")
+
 
     def _sync_gamma_slider(self, val):
         self.gamma.set(int(float(val)))
@@ -298,16 +340,25 @@ class PresetPane(ttk.Frame):
     def save(self):
         p = self.presets[self.preset_id]
         p["gamma"] = self.gamma.get()
-        p["vibrance"] = self.vibrance.get()
+        p["vibrance_mode"] = self.vibrance_mode.get()
+
+        if p["vibrance_mode"] == "nvidia":
+            p["vibrance"] = self.vibrance.get()
+        else:
+            p["vibrance"] = self.ddc_vibrance.get()
+
         p["display"] = self.get_display()
         save_presets(self.presets)
+
 
     def apply(self):
         apply_preset(
             self.get_display(),
             self.gamma.get(),
-            self.vibrance.get()
+            self.vibrance_mode.get(),
+            self.vibrance.get() if self.vibrance_mode.get() == "nvidia" else self.ddc_vibrance.get()
         )
+
 
     # ---- Hotkey config ----
 
