@@ -11,7 +11,7 @@ Are you on _Windows_? Try one of these other apps for hotkey-able display settin
 Don't care about hotkeying display settings? Just want to explore your display settings more closely?
 - You should check out: https://github.com/rockowitz/ddcui
 
-**How to use:**
+##How to use:
 1. Install external dependencies:
    -  [`ddcutil` (for monitor/hardware gamma control)](https://github.com/rockowitz/ddcutil)
    -  [`nvibrant-bin` (NVIDIA-only)](https://github.com/Tremeschin/nvibrant)
