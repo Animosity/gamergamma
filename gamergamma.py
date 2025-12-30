@@ -167,13 +167,25 @@ def apply_preset(display, gamma, vibrance_mode, vibrance):
             "setvcp", "0x72", f"0x{gamma:02X}00"
         ])
 
+
     # Apply NVIDIA vibrance if nvibrant is installed
-    if _deps.get("nvibrant", {}).get("installed"):
-        cmd = ["nvibrant"]+["0"] * 7 # See Note (3).
-        # The parameter position is 2n-1 but it is already offset by the nvibrant string.
-        # Insert vibrance value into monitor-relative parameter position
-        cmd[2*display]=str(vibrance)
-        subprocess.Popen(cmd)
+    if vibrance_mode == "nvidia":
+        if _deps.get("nvibrant", {}).get("installed"):
+            cmd = ["nvibrant"] + ["0"] * 7 # See Note (3).
+            # The parameter position is 2n-1 but it is already offset by the nvibrant string.
+            # Insert vibrance value into monitor-relative parameter position
+            cmd[2 * display] = str(vibrance)
+            subprocess.Popen(cmd)
+
+    elif vibrance_mode == "ddc":
+        if _deps.get("ddcutil", {}).get("installed"):
+            # TODO - Add VCP capabilities check + status bar update here.
+            # VCP 0x10 = color saturation
+            subprocess.Popen([
+                "ddcutil",
+                "-d", str(display),
+                "setvcp", "0x10", str(vibrance)
+            ])
 
 # ----------------------------
 # GUI
@@ -200,7 +212,7 @@ class PresetPane(ttk.Frame):
         self.title_label.bind("<Leave>", lambda e: self._stop_hover_animation())
         self.title_label.configure(foreground="black")
         # ---- Gamma ----
-        ttk.Label(self, text="Gamma").pack(anchor="w")
+        ttk.Label(self, text="Gamma (DDC/CI)").pack(anchor="w")
         g_frame = ttk.Frame(self)
         g_frame.pack(fill="x")
 
@@ -229,13 +241,13 @@ class PresetPane(ttk.Frame):
         mode_frame.pack(anchor="w", pady=(0, 5))
 
         ttk.Radiobutton(
-            mode_frame, text="NVIDIA Digital Vibrance",
+            mode_frame, text="NVIDIA (nvibrant)",
             variable=self.vibrance_mode, value="nvidia",
             command=self._update_vibrance_ui
         ).pack(side="left")
 
         ttk.Radiobutton(
-            mode_frame, text="Monitor Color Vibrance (DDC)",
+            mode_frame, text="Monitor (DDC/CI)",
             variable=self.vibrance_mode, value="ddc",
             command=self._update_vibrance_ui
         ).pack(side="left", padx=(10, 0))
@@ -258,6 +270,8 @@ class PresetPane(ttk.Frame):
         self.vib_slider.set(self.vibrance.get())
         self.vib_slider.pack(side="left", expand=True, fill="x")
 
+
+
         self.vib_ddc_frame = ttk.Frame(self)
 
         self.ddc_vibrance = tk.IntVar(value=presets[self.preset_id]["vibrance"])
@@ -274,6 +288,11 @@ class PresetPane(ttk.Frame):
         self.ddc_slider.set(self.ddc_vibrance.get())
         self.ddc_slider.pack(side="left", expand=True, fill="x")
 
+
+        self.button_frame = ttk.Frame(self)
+        self.button_save = ttk.Button(self.button_frame, text="Save Preset", command=self.save).pack()
+        self.button_apply = ttk.Button(self.button_frame, text="Apply Preset", command=self.apply).pack()
+
         self._update_vibrance_ui()
 
     # ---- Sync helpers ----
@@ -281,9 +300,13 @@ class PresetPane(ttk.Frame):
         if self.vibrance_mode.get() == "nvidia":
             self.vib_ddc_frame.pack_forget()
             self.vib_nvidia_frame.pack(fill="x")
+            self.button_frame.pack_forget()
+            self.button_frame.pack(fill="x")
         else:
             self.vib_nvidia_frame.pack_forget()
             self.vib_ddc_frame.pack(fill="x")
+            self.button_frame.pack_forget()
+            self.button_frame.pack(fill="x")
 
 
     def _sync_gamma_slider(self, val):
