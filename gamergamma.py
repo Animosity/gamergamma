@@ -53,17 +53,24 @@ def detect_monitors():
 
 def load_presets():
     if not os.path.exists(CONFIG_FILE):
-        save_presets(DEFAULT_PRESETS)
+        data = {
+            "presets": DEFAULT_PRESETS,
+            "monitors": fetch_monitor_vcp_state()
+        }
+        save_presets(data)
+        return data
 
     with open(CONFIG_FILE, "r") as f:
         data = json.load(f)
 
-    # Backfill missing keys
+    # Backfill presets if older format
+    data.setdefault("presets", {})
     for pid, defaults in DEFAULT_PRESETS.items():
-        data.setdefault(pid, {})
+        data["presets"].setdefault(pid, {})
         for k, v in defaults.items():
-            data[pid].setdefault(k, v)
+            data["presets"][pid].setdefault(k, v)
 
+    data.setdefault("monitors", {})
     return data
 
 
@@ -109,6 +116,98 @@ def check_linux_dependencies():
 
     return results
 
+def fetch_monitor_vcp_state():
+    """
+    Fetches Brightness, Contrast, Gamma (sh byte), and Vibrance
+    for each detected monitor via ddcutil.
+
+    Returns:
+        dict indexed by display number
+    """
+    monitors = detect_monitors()
+    state = {}
+
+    VCP_CODES = {
+        "brightness": "0x10",
+        "contrast": "0x12",
+        "gamma": "0x72",
+        "vibrance": "0x8A",
+    }
+
+    for display, name in monitors:
+        entry = {"name": name}
+
+        for key, code in VCP_CODES.items():
+            try:
+                out = subprocess.check_output(
+                    ["ddcutil", "getvcp", code, "--display", str(display)],
+                    stderr=subprocess.STDOUT,
+                    text=True
+                )
+            except Exception:
+                continue
+
+            # Brightness / Contrast / Vibrance
+            m = re.search(r"current value\s*=\s*(\d+)", out)
+            if m and key != "gamma":
+                entry[key] = int(m.group(1))
+                continue
+
+            # Gamma: extract sh=0xXX
+            if key == "gamma":
+                m = re.search(r"sh=0x([0-9A-Fa-f]{2})", out)
+                if m:
+                    entry["gamma_sh"] = int(m.group(1), 16)
+
+        if len(entry) > 1:
+            state[str(display)] = entry
+
+    return state
+
+def restore_monitor_state(display):
+    """
+    Restores saved monitor VCP state (Brightness, Contrast, Gamma, Vibrance)
+    using ddcutil setvcp from gg_presets.json
+    """
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            data = json.load(f)
+    except Exception:
+        return
+
+    monitors = data.get("monitors", {})
+    entry = monitors.get(str(display))
+    if not entry:
+        return
+
+    # Brightness
+    if "brightness" in entry:
+        subprocess.Popen([
+            "ddcutil", "-d", str(display),
+            "setvcp", "0x10", str(entry["brightness"])
+        ])
+
+    # Contrast
+    if "contrast" in entry:
+        subprocess.Popen([
+            "ddcutil", "-d", str(display),
+            "setvcp", "0x12", str(entry["contrast"])
+        ])
+
+    # Gamma (restore sh byte only; lsbyte forced to 0x00)
+    if "gamma_sh" in entry:
+        gamma_hex = f"0x{entry['gamma_sh']:02X}00"
+        subprocess.Popen([
+            "ddcutil", "-d", str(display),
+            "setvcp", "0x72", gamma_hex
+        ])
+
+    # Vibrance / Color Saturation
+    if "vibrance" in entry:
+        subprocess.Popen([
+            "ddcutil", "-d", str(display),
+            "setvcp", "0x8A", str(entry["vibrance"])
+        ])
 
 
 def apply_preset(display, gamma, vibrance_mode, vibrance):
@@ -212,7 +311,7 @@ class PresetPane(ttk.Frame):
         )
 
         self.base_title_font = ("Sans", 12, "bold")
-        self.throb_title_font = ("Sans", 10, "bold")  # -2pt
+        self.throb_title_font = ("Sans", 11, "bold")  # -1pt
         self.title_label.configure(font=self.base_title_font)
 
         self.title_label.pack(pady=(0, 10))
@@ -366,13 +465,13 @@ class PresetPane(ttk.Frame):
         self.title_label.configure(
             text=f"{self.base_title} ({hotkey.upper()})"
     )
-    def throb_title(self, duration_ms=250):
+    def throb_title(self, duration_ms=100):
         """
         Brief visual throb when preset is activated via hotkey.
         Pulses brightness and increases typeface size
         """
 
-        # Cancel existing throb
+        # Cancel existing git
         if hasattr(self, "_throb_after_id"):
             self.after_cancel(self._throb_after_id)
 
@@ -393,7 +492,7 @@ class PresetPane(ttk.Frame):
                 self.title_label.configure(font=self.throb_title_font)
             else:
                 self.title_label.configure(font=self.base_title_font)
-
+            
             self.title_label.configure(foreground=colors[i])
             self._throb_after_id = self.after(step_ms, animate, i + 1)
 
@@ -648,7 +747,8 @@ def add_dependency_status_bar(root):
 
 def main():
     print(f"gamergamma v{VERSION}\n  created by: github.com/Animosity")
-    presets = load_presets()
+    #presets = load_presets()
+    presets = load_presets()["presets"]
     monitors = detect_monitors()
 
     root = tk.Tk()
@@ -688,7 +788,20 @@ def main():
         state="readonly",
         width=40
     )
-    combo.pack(side="left", padx=10)
+    combo.pack(side="left", padx=(10, 5))
+
+    def restore_selected_monitor():
+        display = get_selected_display()
+        restore_monitor_state(display)
+
+    restore_btn = ttk.Button(
+        top,
+        text="Restore Monitor Settings",
+        command=restore_selected_monitor
+    )
+
+    restore_btn.pack(side="left", padx=(5, 0))
+
 
     def get_selected_display():
         return monitor_map.get(monitor_var.get(), preset_display)
