@@ -6,6 +6,9 @@ import os, subprocess, shutil
 import webbrowser
 from pynput import keyboard as pynput_keyboard
 
+# TODO - Capture existing monitor brightness, contrast, gamma, color saturation settings to local presets file
+# TODO - Restore Original Monitor Settings (brightness, contrast, gamma, color sat)
+# TODO - Scale color sat and gamma slider max values to the monitor/nvidia capabilities respectively
 
 VERSION = "0.2.0"
 MAINTAINERS = ["Animosity"]
@@ -127,7 +130,8 @@ def apply_preset(display, gamma, vibrance_mode, vibrance):
     using a singular GPU RTX30XX-series presence with one HDMI and 3 DP outputs.
     * ddcutil 0x72 value packing is tailored to Dell S2716DG (see Notes)
     * *FIXED 24DEC2025* -- NVIBRANT call doesn't use Monitor index (always #2)
-    * NVIDIA-only support for vibrance control
+    * *FIXED 30DEC2025* -- NVIDIA-only support for vibrance control; NOW SUPPORTS
+                           MONITOR VIBRANCE (blindly, no capability check yet)
 
     Notes:
     (1) Dell S2716DG only uses the MSByte of the gamma value. Writing LSByte != 0x00
@@ -174,7 +178,7 @@ def apply_preset(display, gamma, vibrance_mode, vibrance):
             cmd = ["nvibrant"] + ["0"] * 7 # See Note (3).
             # The parameter position is 2n-1 but it is already offset by the nvibrant string.
             # Insert vibrance value into monitor-relative parameter position
-            cmd[2 * display] = str(vibrance)
+            cmd[2*display] = str(vibrance)
             subprocess.Popen(cmd)
 
     elif vibrance_mode == "ddc":
