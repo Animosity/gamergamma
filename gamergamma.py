@@ -6,8 +6,6 @@ import os, subprocess, shutil
 import webbrowser
 from pynput import keyboard as pynput_keyboard
 
-# TODO - Capture existing monitor brightness, contrast, gamma, color saturation settings to local presets file
-# TODO - Restore Original Monitor Settings (brightness, contrast, gamma, color sat)
 # TODO - Scale color sat and gamma slider max values to the monitor/nvidia capabilities respectively
 
 VERSION = "0.2.0"
