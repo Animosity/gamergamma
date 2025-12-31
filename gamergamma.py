@@ -6,7 +6,7 @@ import os, subprocess, shutil
 import webbrowser
 from pynput import keyboard as pynput_keyboard
 
-# TODO - Scale color sat and gamma slider max values to the monitor/nvidia capabilities respectively
+# TODO - Scale color sat and gamma slider max values to the monitor/nvidia capabilities (from ddcutil getvcp "max value = <val>" substring) respectively
 
 VERSION = "0.2.0"
 MAINTAINERS = ["Animosity"]
@@ -146,10 +146,15 @@ def fetch_monitor_vcp_state():
                 continue
 
             # Brightness / Contrast / Vibrance
-            m = re.search(r"current value\s*=\s*(\d+)", out)
-            if m and key != "gamma":
-                entry[key] = int(m.group(1))
-                continue
+            m = re.search(r"current value\s*=\s*(\d+),\s*max value\s*=\s*(\d+)", out)
+            if key == "gamma":
+                sh = re.search(r"sh=0x([0-9A-Fa-f]{2})", out)
+                maxm = re.search(r"max value\s*=\s*(\d+)", out)
+                if sh:
+                    entry["gamma_sh"] = int(sh.group(1), 16)
+                if maxm:
+                    entry["gamma_max"] = int(maxm.group(1))
+
 
             # Gamma: extract sh=0xXX
             if key == "gamma":
@@ -206,6 +211,19 @@ def restore_monitor_state(display):
             "ddcutil", "-d", str(display),
             "setvcp", "0x8A", str(entry["vibrance"])
         ])
+
+def get_monitor_vcp_limits(display):
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            data = json.load(f)
+    except Exception:
+        return {}
+
+    entry = data.get("monitors", {}).get(str(display), {})
+    return {
+        "gamma_max": entry.get("gamma_max"),
+        "vibrance_max": entry.get("vibrance_max"),
+    }
 
 
 def apply_preset(display, gamma, vibrance_mode, vibrance):
@@ -399,7 +417,10 @@ class PresetPane(ttk.Frame):
         self.button_save = ttk.Button(self.button_frame, text="Save Preset", command=self.save).pack()
         self.button_apply = ttk.Button(self.button_frame, text="Apply Preset", command=self.apply).pack()
 
+        
+        self.update_ddc_slider_limits()
         self._update_vibrance_ui()
+
 
     # ---- Sync helpers ----
     def _update_vibrance_ui(self):
@@ -458,6 +479,18 @@ class PresetPane(ttk.Frame):
         self._hover_index = (self._hover_index + 1) % len(colors)
         self._hover_after_id = self.after(120, self._animate_hover)
 
+
+    def update_ddc_slider_limits(self):
+        display = self.get_display()
+        limits = get_monitor_vcp_limits(display)
+
+        if limits.get("vibrance_max") is not None:
+            self.ddc_slider.configure(to=limits["vibrance_max"])
+
+        if limits.get("gamma_max") is not None:
+            self.gamma_slider.configure(to=limits["gamma_max"])
+
+
     def refresh_title(self):
         hotkey = self.presets[self.preset_id]["hotkey"]
         self.title_label.configure(
@@ -495,6 +528,8 @@ class PresetPane(ttk.Frame):
             self._throb_after_id = self.after(step_ms, animate, i + 1)
 
         animate()
+
+
 
     # ---- Preset actions ----
 
@@ -786,6 +821,13 @@ def main():
         state="readonly",
         width=40
     )
+
+    def on_monitor_change(_):
+        for child in container.winfo_children():
+            if isinstance(child, PresetPane):
+                child.update_ddc_slider_limits()
+
+    combo.bind("<<ComboboxSelected>>", on_monitor_change)
     combo.pack(side="left", padx=(10, 5))
 
     def restore_selected_monitor():
