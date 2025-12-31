@@ -6,8 +6,7 @@ import os, subprocess, shutil
 import webbrowser
 from pynput import keyboard as pynput_keyboard
 
-
-VERSION = "0.1.0"
+VERSION = "0.3.0"
 MAINTAINERS = ["Animosity"]
 
 CONFIG_FILE = "gg_presets.json"
@@ -16,10 +15,11 @@ _hotkey_listener = None
 _hotkey_map = {}
 
 DEFAULT_PRESETS = {
-    "1": {"display": 1, "gamma": 128, "vibrance": 0, "hotkey": "alt+1"},
-    "2": {"display": 1, "gamma": 144, "vibrance": 512, "hotkey": "alt+2"},
-    "3": {"display": 1, "gamma": 255, "vibrance": 1023, "hotkey": "alt+3"},
+    "1": {"display": 1, "gamma": 128, "vibrance": 0, "vibrance_mode": "nvidia", "hotkey": "alt+1"},
+    "2": {"display": 1, "gamma": 144, "vibrance": 512, "vibrance_mode": "nvidia", "hotkey": "alt+2"},
+    "3": {"display": 1, "gamma": 255, "vibrance": 1023, "vibrance_mode": "nvidia", "hotkey": "alt+3"},
 }
+
 
 # ----------------------------
 # Utility functions
@@ -49,17 +49,24 @@ def detect_monitors():
 
 def load_presets():
     if not os.path.exists(CONFIG_FILE):
-        save_presets(DEFAULT_PRESETS)
+        data = {
+            "presets": DEFAULT_PRESETS,
+            "monitors": fetch_monitor_vcp_state()
+        }
+        save_presets(data)
+        return data
 
     with open(CONFIG_FILE, "r") as f:
         data = json.load(f)
 
-    # Backfill missing keys
+    # Backfill presets if older format
+    data.setdefault("presets", {})
     for pid, defaults in DEFAULT_PRESETS.items():
-        data.setdefault(pid, {})
+        data["presets"].setdefault(pid, {})
         for k, v in defaults.items():
-            data[pid].setdefault(k, v)
+            data["presets"][pid].setdefault(k, v)
 
+    data.setdefault("monitors", {})
     return data
 
 
@@ -105,10 +112,119 @@ def check_linux_dependencies():
 
     return results
 
+def fetch_monitor_vcp_state():
+    """
+    Fetches Brightness, Contrast, Gamma (sh byte), and Vibrance
+    for each detected monitor via ddcutil.
+
+    Returns:
+        dict indexed by display number
+    """
+    monitors = detect_monitors()
+    state = {}
+
+    VCP_CODES = {
+        "brightness": "0x10",
+        "contrast": "0x12",
+        "gamma": "0x72",
+        "vibrance": "0x8A",
+    }
+
+    for display, name in monitors:
+        entry = {"name": name}
+
+        for key, code in VCP_CODES.items():
+            try:
+                out = subprocess.check_output(
+                    ["ddcutil", "getvcp", code, "--display", str(display)],
+                    stderr=subprocess.STDOUT,
+                    text=True
+                )
+            except Exception:
+                continue
+
+            # Brightness / Contrast / Vibrance
+            m = re.search(r"current value\s*=\s*(\d+),\s*max value\s*=\s*(\d+)", out)
+            if key == "gamma":
+                sh = re.search(r"sh=0x([0-9A-Fa-f]{2})", out)
+                maxm = re.search(r"max value\s*=\s*(\d+)", out)
+                if sh:
+                    entry["gamma_sh"] = int(sh.group(1), 16)
+                if maxm:
+                    entry["gamma_max"] = int(maxm.group(1))
 
 
+            # Gamma: extract sh=0xXX
+            if key == "gamma":
+                m = re.search(r"sh=0x([0-9A-Fa-f]{2})", out)
+                if m:
+                    entry["gamma_sh"] = int(m.group(1), 16)
 
-def apply_preset(display, gamma, vibrance):
+        if len(entry) > 1:
+            state[str(display)] = entry
+
+    return state
+
+def restore_monitor_state(display):
+    """
+    Restores saved monitor VCP state (Brightness, Contrast, Gamma, Vibrance)
+    using ddcutil setvcp from gg_presets.json
+    """
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            data = json.load(f)
+    except Exception:
+        return
+
+    monitors = data.get("monitors", {})
+    entry = monitors.get(str(display))
+    if not entry:
+        return
+
+    # Brightness
+    if "brightness" in entry:
+        subprocess.Popen([
+            "ddcutil", "-d", str(display),
+            "setvcp", "0x10", str(entry["brightness"])
+        ])
+
+    # Contrast
+    if "contrast" in entry:
+        subprocess.Popen([
+            "ddcutil", "-d", str(display),
+            "setvcp", "0x12", str(entry["contrast"])
+        ])
+
+    # Gamma (restore sh byte only; lsbyte forced to 0x00)
+    if "gamma_sh" in entry:
+        gamma_hex = f"0x{entry['gamma_sh']:02X}00"
+        subprocess.Popen([
+            "ddcutil", "-d", str(display),
+            "setvcp", "0x72", gamma_hex
+        ])
+
+    # Vibrance / Color Saturation
+    if "vibrance" in entry:
+        subprocess.Popen([
+            "ddcutil", "-d", str(display),
+            "setvcp", "0x8A", str(entry["vibrance"])
+        ])
+
+def get_monitor_vcp_limits(display):
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            data = json.load(f)
+    except Exception:
+        return {}
+
+    entry = data.get("monitors", {}).get(str(display), {})
+    return {
+        "gamma_max": entry.get("gamma_max"),
+        "vibrance_max": entry.get("vibrance_max"),
+    }
+
+
+def apply_preset(display, gamma, vibrance_mode, vibrance):
     """ README/FOLDME
     This function is vital and is where compatibilty will absolutely break.
     EXTERNAL DEPENDENCIES: ddcutil, nvibrant
@@ -127,7 +243,8 @@ def apply_preset(display, gamma, vibrance):
     using a singular GPU RTX30XX-series presence with one HDMI and 3 DP outputs.
     * ddcutil 0x72 value packing is tailored to Dell S2716DG (see Notes)
     * *FIXED 24DEC2025* -- NVIBRANT call doesn't use Monitor index (always #2)
-    * NVIDIA-only support for vibrance control
+    * *FIXED 30DEC2025* -- NVIDIA-only support for vibrance control; NOW SUPPORTS
+                           MONITOR VIBRANCE (blindly, no capability check yet)
 
     Notes:
     (1) Dell S2716DG only uses the MSByte of the gamma value. Writing LSByte != 0x00
@@ -160,20 +277,32 @@ def apply_preset(display, gamma, vibrance):
     global _deps
     # Apply monitor gamma via ddcutil if installed.
     # See Notes (1-2).
-    if _deps.get("nvibrant", {}).get("installed"):
+    if _deps.get("ddcutil", {}).get("installed"):
         subprocess.Popen([
             "ddcutil",
             "-d", str(display),
             "setvcp", "0x72", f"0x{gamma:02X}00"
         ])
 
+
     # Apply NVIDIA vibrance if nvibrant is installed
-    if _deps.get("nvibrant", {}).get("installed"):
-        cmd = ["nvibrant"]+["0"] * 7 # See Note (3).
-        # The parameter position is 2n-1 but it is already offset by the nvibrant string.
-        # Insert vibrance value into monitor-relative parameter position
-        cmd[2*display]=str(vibrance)
-        subprocess.Popen(cmd)
+    if vibrance_mode == "nvidia":
+        if _deps.get("nvibrant", {}).get("installed"):
+            cmd = ["nvibrant"] + ["0"] * 7 # See Note (3).
+            # The parameter position is 2n-1 but it is already offset by the nvibrant string.
+            # Insert vibrance value into monitor-relative parameter position
+            cmd[2*display] = str(vibrance)
+            subprocess.Popen(cmd)
+
+    elif vibrance_mode == "ddc":
+        if _deps.get("ddcutil", {}).get("installed"):
+            # TODO - Add VCP capabilities check + status bar update here.
+            # VCP 0x10 = color saturation
+            subprocess.Popen([
+                "ddcutil",
+                "-d", str(display),
+                "setvcp", "0x8A", str(vibrance)
+            ])
 
 # ----------------------------
 # GUI
@@ -194,13 +323,18 @@ class PresetPane(ttk.Frame):
             cursor="hand2",
             foreground="black"
         )
+
+        self.base_title_font = ("Sans", 12, "bold")
+        self.throb_title_font = ("Sans", 11, "bold")  # -1pt
+        self.title_label.configure(font=self.base_title_font)
+
         self.title_label.pack(pady=(0, 10))
         self.title_label.bind("<Button-1>", self.open_hotkey_config)
         self.title_label.bind("<Enter>", lambda e: self._start_hover_animation())
         self.title_label.bind("<Leave>", lambda e: self._stop_hover_animation())
         self.title_label.configure(foreground="black")
         # ---- Gamma ----
-        ttk.Label(self, text="Gamma").pack(anchor="w")
+        ttk.Label(self, text="Gamma (DDC/CI)").pack(anchor="w")
         g_frame = ttk.Frame(self)
         g_frame.pack(fill="x")
 
@@ -218,29 +352,87 @@ class PresetPane(ttk.Frame):
         self.gamma_slider.set(self.gamma.get())
         self.gamma_slider.pack(side="left", expand=True, fill="x")
 
-        # ---- Vibrance ----
-        ttk.Label(self, text="Vibrance").pack(anchor="w", pady=(10, 0))
-        v_frame = ttk.Frame(self)
-        v_frame.pack(fill="x")
+       # ---- Vibrance Mode ----
+        ttk.Label(self, text="Vibrance Source").pack(anchor="w", pady=(10, 0))
+
+        self.vibrance_mode = tk.StringVar(
+            value=presets[self.preset_id].get("vibrance_mode", "NVIDIA")
+        )
+
+        mode_frame = ttk.Frame(self)
+        mode_frame.pack(anchor="w", pady=(0, 5))
+
+        ttk.Radiobutton(
+            mode_frame, text="NVIDIA (nvibrant)",
+            variable=self.vibrance_mode, value="nvidia",
+            command=self._update_vibrance_ui
+        ).pack(side="left")
+
+        ttk.Radiobutton(
+            mode_frame, text="Monitor (DDC/CI)",
+            variable=self.vibrance_mode, value="ddc",
+            command=self._update_vibrance_ui
+        ).pack(side="left", padx=(10, 0))
+
+        self.vib_nvidia_frame = ttk.Frame(self)
+        self.vib_nvidia_frame.pack(fill="x")
 
         self.vibrance = tk.IntVar(value=presets[self.preset_id]["vibrance"])
 
-        self.vib_entry = ttk.Entry(v_frame, width=6, textvariable=self.vibrance)
+        self.vib_entry = ttk.Entry(self.vib_nvidia_frame, width=6, textvariable=self.vibrance)
         self.vib_entry.pack(side="right", padx=5)
         self.vib_entry.bind("<Return>", self._sync_vib_entry)
 
         self.vib_slider = ttk.Scale(
-            v_frame, from_=-1023, to=1023,
+            self.vib_nvidia_frame,
+            from_=-1023, to=1023,
             orient="horizontal",
             command=self._sync_vib_slider
         )
         self.vib_slider.set(self.vibrance.get())
         self.vib_slider.pack(side="left", expand=True, fill="x")
 
-        ttk.Button(self, text="Save Preset", command=self.save).pack(pady=(15, 5))
-        ttk.Button(self, text="Apply Preset", command=self.apply).pack()
+
+
+        self.vib_ddc_frame = ttk.Frame(self)
+
+        self.ddc_vibrance = tk.IntVar(value=presets[self.preset_id]["vibrance"])
+
+        self.ddc_entry = ttk.Entry(self.vib_ddc_frame, width=6, textvariable=self.ddc_vibrance)
+        self.ddc_entry.pack(side="right", padx=5)
+
+        self.ddc_slider = ttk.Scale(
+            self.vib_ddc_frame,
+            from_=0, to=100,   # typical DDC color saturation range
+            orient="horizontal",
+            command=lambda v: self.ddc_vibrance.set(int(float(v)))
+        )
+        self.ddc_slider.set(self.ddc_vibrance.get())
+        self.ddc_slider.pack(side="left", expand=True, fill="x")
+
+
+        self.button_frame = ttk.Frame(self)
+        self.button_save = ttk.Button(self.button_frame, text="Save Preset", command=self.save).pack()
+        self.button_apply = ttk.Button(self.button_frame, text="Apply Preset", command=self.apply).pack()
+
+        
+        self.update_ddc_slider_limits()
+        self._update_vibrance_ui()
+
 
     # ---- Sync helpers ----
+    def _update_vibrance_ui(self):
+        if self.vibrance_mode.get() == "nvidia":
+            self.vib_ddc_frame.pack_forget()
+            self.vib_nvidia_frame.pack(fill="x")
+            self.button_frame.pack_forget()
+            self.button_frame.pack(fill="x")
+        else:
+            self.vib_nvidia_frame.pack_forget()
+            self.vib_ddc_frame.pack(fill="x")
+            self.button_frame.pack_forget()
+            self.button_frame.pack(fill="x")
+
 
     def _sync_gamma_slider(self, val):
         self.gamma.set(int(float(val)))
@@ -285,27 +477,82 @@ class PresetPane(ttk.Frame):
         self._hover_index = (self._hover_index + 1) % len(colors)
         self._hover_after_id = self.after(120, self._animate_hover)
 
+
+    def update_ddc_slider_limits(self):
+        display = self.get_display()
+        limits = get_monitor_vcp_limits(display)
+
+        if limits.get("vibrance_max") is not None:
+            self.ddc_slider.configure(to=limits["vibrance_max"])
+
+        if limits.get("gamma_max") is not None:
+            self.gamma_slider.configure(to=limits["gamma_max"])
+
+
     def refresh_title(self):
         hotkey = self.presets[self.preset_id]["hotkey"]
         self.title_label.configure(
             text=f"{self.base_title} ({hotkey.upper()})"
     )
+    def throb_title(self, duration_ms=100):
+        """
+        Brief visual throb when preset is activated via hotkey.
+        Pulses brightness and increases typeface size
+        """
+
+        # Cancel existing git
+        if hasattr(self, "_throb_after_id"):
+            self.after_cancel(self._throb_after_id)
+
+        colors = ["#000000", "#777777", "#FFFFFF", "#777777", "#000000"]
+        steps = len(colors)
+        step_ms = max(1, duration_ms // steps)
+
+        def animate(i=0):
+            if i >= steps:
+                self.title_label.configure(
+                    foreground="black",
+                    font=self.base_title_font
+                )
+                return
+
+            # Grow font on peak frames only
+            if i in (1, 2, 3):
+                self.title_label.configure(font=self.throb_title_font)
+            else:
+                self.title_label.configure(font=self.base_title_font)
+            
+            self.title_label.configure(foreground=colors[i])
+            self._throb_after_id = self.after(step_ms, animate, i + 1)
+
+        animate()
+
+
 
     # ---- Preset actions ----
 
     def save(self):
         p = self.presets[self.preset_id]
         p["gamma"] = self.gamma.get()
-        p["vibrance"] = self.vibrance.get()
+        p["vibrance_mode"] = self.vibrance_mode.get()
+
+        if p["vibrance_mode"] == "nvidia":
+            p["vibrance"] = self.vibrance.get()
+        else:
+            p["vibrance"] = self.ddc_vibrance.get()
+
         p["display"] = self.get_display()
         save_presets(self.presets)
+
 
     def apply(self):
         apply_preset(
             self.get_display(),
             self.gamma.get(),
-            self.vibrance.get()
+            self.vibrance_mode.get(),
+            self.vibrance.get() if self.vibrance_mode.get() == "nvidia" else self.ddc_vibrance.get()
         )
+
 
     # ---- Hotkey config ----
 
@@ -382,7 +629,6 @@ class PresetPane(ttk.Frame):
 # ----------------------------
 # Hotkeys + Menu
 # ----------------------------
-
 def setup_hotkeys(container):
     global _hotkey_listener, _hotkey_map
 
@@ -399,8 +645,15 @@ def setup_hotkeys(container):
                 for k in hk.lower().split("+")
             )
 
-            _hotkey_map[pynput_hk] = child.apply
+            #_hotkey_map[pynput_hk] = child.apply
+            def make_callback(pane):
+                def cb():
+                    # Throb title immediately on hotkey
+                    pane.throb_title(250)
+                    pane.apply()
+                return cb
 
+            _hotkey_map[pynput_hk] = make_callback(child)
     if _hotkey_listener:
         _hotkey_listener.stop()
     _hotkey_listener = pynput_keyboard.GlobalHotKeys(_hotkey_map)
@@ -419,6 +672,7 @@ def show_about():
     frame = ttk.Frame(win, padding=12)
     frame.pack(fill="both", expand=True)
 
+    # Author (clickable)
     author_label = ttk.Label(
         frame,
         text="Author: github.com/Animosity",
@@ -431,6 +685,7 @@ def show_about():
         lambda e: open_url("https://github.com/Animosity/gamergamma")
     )
 
+    # Body text (pre-requirements)
     body_text = (
         "By and for colorblind gamers (and allies).\nHow to use: Click the Preset # (<keybind>) title to configure the hotkey for the preset.\n\n"
         "Adjust and save the gamma and vibrance settings for each preset you want to use.\n\n"
@@ -475,6 +730,7 @@ def show_about():
         justify="left"
     ).pack(anchor="w")
 
+    # OK button
     ttk.Button(frame, text="OK", command=win.destroy).pack(pady=(10, 0))
 
 
@@ -522,7 +778,8 @@ def add_dependency_status_bar(root):
 
 def main():
     print(f"gamergamma v{VERSION}\n  created by: github.com/Animosity")
-    presets = load_presets()
+    #presets = load_presets()
+    presets = load_presets()["presets"]
     monitors = detect_monitors()
 
     root = tk.Tk()
@@ -562,7 +819,27 @@ def main():
         state="readonly",
         width=40
     )
-    combo.pack(side="left", padx=10)
+
+    def on_monitor_change(_):
+        for child in container.winfo_children():
+            if isinstance(child, PresetPane):
+                child.update_ddc_slider_limits()
+
+    combo.bind("<<ComboboxSelected>>", on_monitor_change)
+    combo.pack(side="left", padx=(10, 5))
+
+    def restore_selected_monitor():
+        display = get_selected_display()
+        restore_monitor_state(display)
+
+    restore_btn = ttk.Button(
+        top,
+        text="Restore Monitor Settings",
+        command=restore_selected_monitor
+    )
+
+    restore_btn.pack(side="left", padx=(5, 0))
+
 
     def get_selected_display():
         return monitor_map.get(monitor_var.get(), preset_display)
