@@ -61,7 +61,8 @@ dynamically for the color-challenged users.
   using a singular GPU RTX30XX-series presence with one HDMI and 3 DP outputs
 * *FIXED 30DEC2025* Destructive settings - Does not store original monitor configuration
 * *FIXED 24DEC2025* -- NVIBRANT call doesn't use Monitor index (always #2)
-* *FIXED 30DEC2025* -- NVIDIA-only support for vibrance control; NOW SUPPORTS MONITOR VIBRANCE (blindly, no capability check yet)
+* *FIXED 30DEC2025* -- NVIDIA-only support for vibrance control; NOW SUPPORTS MONITOR VIBRANCE 
+* *FIXED 30DEC2025* -- Destructive settings - Does not store original monitor configuration; ; NOW STORES & RESTORES
 
 ### Development reference:
 - `Dell S2716DG` only uses the MSByte of the gamma value. 
