@@ -462,16 +462,6 @@ class PresetPane(ttk.Frame):
 # ----------------------------
 # Hotkeys + Menu
 # ----------------------------
-
-def setup_hotkeys_old(container):
-    #try: keyboard.unhook_all_hotkeys()
-    #except Exception:
-    #    pass
-    for child in container.winfo_children():
-        if isinstance(child, PresetPane):
-            hk = child.presets[child.preset_id]["hotkey"]
-            keyboard.add_hotkey(hk, child.apply)
-
 def setup_hotkeys(container):
     global _hotkey_listener, _hotkey_map
 
