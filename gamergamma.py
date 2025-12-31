@@ -188,7 +188,7 @@ def apply_preset(display, gamma, vibrance_mode, vibrance):
             subprocess.Popen([
                 "ddcutil",
                 "-d", str(display),
-                "setvcp", "0x10", str(vibrance)
+                "setvcp", "0x8A", str(vibrance)
             ])
 
 # ----------------------------
@@ -210,6 +210,11 @@ class PresetPane(ttk.Frame):
             cursor="hand2",
             foreground="black"
         )
+
+        self.base_title_font = ("Sans", 12, "bold")
+        self.throb_title_font = ("Sans", 10, "bold")  # -2pt
+        self.title_label.configure(font=self.base_title_font)
+
         self.title_label.pack(pady=(0, 10))
         self.title_label.bind("<Button-1>", self.open_hotkey_config)
         self.title_label.bind("<Enter>", lambda e: self._start_hover_animation())
@@ -285,7 +290,7 @@ class PresetPane(ttk.Frame):
 
         self.ddc_slider = ttk.Scale(
             self.vib_ddc_frame,
-            from_=0, to=63,   # typical DDC color saturation range
+            from_=0, to=100,   # typical DDC color saturation range
             orient="horizontal",
             command=lambda v: self.ddc_vibrance.set(int(float(v)))
         )
@@ -361,6 +366,38 @@ class PresetPane(ttk.Frame):
         self.title_label.configure(
             text=f"{self.base_title} ({hotkey.upper()})"
     )
+    def throb_title(self, duration_ms=250):
+        """
+        Brief visual throb when preset is activated via hotkey.
+        Pulses brightness and increases typeface size
+        """
+
+        # Cancel existing throb
+        if hasattr(self, "_throb_after_id"):
+            self.after_cancel(self._throb_after_id)
+
+        colors = ["#000000", "#777777", "#FFFFFF", "#777777", "#000000"]
+        steps = len(colors)
+        step_ms = max(1, duration_ms // steps)
+
+        def animate(i=0):
+            if i >= steps:
+                self.title_label.configure(
+                    foreground="black",
+                    font=self.base_title_font
+                )
+                return
+
+            # Grow font on peak frames only
+            if i in (1, 2, 3):
+                self.title_label.configure(font=self.throb_title_font)
+            else:
+                self.title_label.configure(font=self.base_title_font)
+
+            self.title_label.configure(foreground=colors[i])
+            self._throb_after_id = self.after(step_ms, animate, i + 1)
+
+        animate()
 
     # ---- Preset actions ----
 
@@ -478,8 +515,15 @@ def setup_hotkeys(container):
                 for k in hk.lower().split("+")
             )
 
-            _hotkey_map[pynput_hk] = child.apply
+            #_hotkey_map[pynput_hk] = child.apply
+            def make_callback(pane):
+                def cb():
+                    # Throb title immediately on hotkey
+                    pane.throb_title(250)
+                    pane.apply()
+                return cb
 
+            _hotkey_map[pynput_hk] = make_callback(child)
     if _hotkey_listener:
         _hotkey_listener.stop()
     _hotkey_listener = pynput_keyboard.GlobalHotKeys(_hotkey_map)
