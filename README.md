@@ -11,7 +11,7 @@ Are you on _Windows_? Try one of these other apps for hotkey-able display settin
 Don't care about hotkeying display settings? Just want to explore your display settings more closely?
 - You should check out: https://github.com/rockowitz/ddcui
 
-## How to use:
+**How to use:**
 1. Install external dependencies:
    -  [`ddcutil` (for monitor/hardware gamma control)](https://github.com/rockowitz/ddcutil)
    -  [`nvibrant-bin` (NVIDIA-only)](https://github.com/Tremeschin/nvibrant)
@@ -25,15 +25,13 @@ Don't care about hotkeying display settings? Just want to explore your display s
 7. Click the **Preset # (\<HotKey\>)** title to reconfigure the preset's hotkey to your choice.
 8. Use your hotkeys in any game/app of your choice.
 
-Demo GIF
-
-![](https://private-user-images.githubusercontent.com/105494/530158312-52ee5ebc-fd68-4723-852e-b1b2dbdc751e.gif?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NjY2NDY1NzksIm5iZiI6MTc2NjY0NjI3OSwicGF0aCI6Ii8xMDU0OTQvNTMwMTU4MzEyLTUyZWU1ZWJjLWZkNjgtNDcyMy04NTJlLWIxYjJkYmRjNzUxZS5naWY_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjUxMjI1JTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI1MTIyNVQwNzA0MzlaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT02MGZjYTZhZThkOGFkODAwNGQ2NDMwNWJkYWYxNGM5YjU4MGFjYTc4ODM0OGZmODZjYTM0MmI1MGVkMjZkYWJmJlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCJ9.M_GATETZv7_teyyS6MKhaWnKKFlwwbgwBnvDt2s3OT8)
+TODO Insert Demo GIF
 
 `Gamma level changes not visible in gif due to hardware gamma adjustment, not software.`
 
 FAQ: 
 - Question: **Will I get banned from \<game/service\> for using this?**
-- Answer: **No. You will not be banned for using this tool**, as it does not read or modify memory of any games/applications. Rather, it adjusts the hardware gamma setting of your selected monitor (in the same manner as your monitor OSD menu) and adjusts the color saturation of monitor (or "digital vibance" via NVIDIA driver), just the same as in Display Settings or NVIDIA Control Panel.
+- Answer: **No. You will not be banned for using this tool**, as it does not read or modify memory of any games/applications. Rather, it adjusts the hardware gamma setting of your selected monitor (in the same manner as your monitor OSD menu) and adjusts the color saturation ("digital vibance") of your graphics using the NVIDIA driver, just the same as in NVIDIA Control Panel.
 
 
 NOTES:
@@ -59,12 +57,11 @@ primary gaming monitor. Additionally, it is to adjust the digital vibrance
 dynamically for the color-challenged users.
 
 ### Architecture Notes/Limitations:
-* Destructive settings - Does not store original monitor configuration
 * nvibrant parameters are structured for the formatted output of (`nvibrant`)
-  using a singular GPU RTX30XX-series presence with one HDMI and 3 DP outputs.
-* ddcutil 0x72 value packing is tailored to Dell S2716DG (see [Notes](https://github.com/Animosity/gamergamma/blob/37eb64f5cf4f18a2266d2499db231abb62b3e3b5/gamergamma.py#L111))
+  using a singular GPU RTX30XX-series presence with one HDMI and 3 DP outputs
 * *FIXED 24DEC2025* -- NVIBRANT call doesn't use Monitor index (always #2)
-* NVIDIA-only support for vibrance control
+* *FIXED 30DEC2025* -- NVIDIA-only support for vibrance control; NOW SUPPORTS MONITOR VIBRANCE 
+* *FIXED 30DEC2025* -- Destructive settings - Does not store original monitor configuration; ; NOW STORES & RESTORES
 
 ### Development reference:
 - `Dell S2716DG` only uses the MSByte of the gamma value. 
