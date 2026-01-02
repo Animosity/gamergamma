@@ -6,6 +6,7 @@ This _Linux_ tool provides improved vision in low contrast scenes in any game/vi
 - **Monitor settings restoration** (to your settings that were detected when gamergamma was opened for the first time)
 - Local settings file
 - Doesn't violate game Terms of Service
+- ROOT NOT REQUIRED
 
 Are you on _Windows_? Try one of these other apps for hotkey-able display settings in your games:
 - https://github.com/qlintenFX/KeyedColors
