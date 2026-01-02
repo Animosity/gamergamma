@@ -1,15 +1,27 @@
 # gamergamma
 ## Developed with colorblind gamers in mind. 
-**This _Linux_ tool provides** 
-- **configurable hotkeys** to **adjust the hardware gamma** (display monitor) **& color vibrance** (NVIDIA & display monitor)
-- **3 hotkey-able presets**
+This _Linux_ tool provides improved vision in low contrast scenes in any game/video/application AND:
+- **3 Configurable Presets for hardware Gamma (display monitor) and Color Vibrance/Saturation (NVIDIA & display monitor)**
+- **Configurable hotkeys** (just click on the Preset # name!)
 - **Monitor settings restoration** (to your settings that were detected when gamergamma was opened for the first time)
-
+- Local settings file
+- Doesn't violate game Terms of Service
 
 Are you on _Windows_? Try one of these other apps for hotkey-able display settings in your games:
 - https://github.com/qlintenFX/KeyedColors
 - https://github.com/maxgodman/GammaHotkey
 - https://github.com/panicaz/tarkov-settings-fullscreen-hotkey 
+
+Used for games like:
+- ARC Raiders
+- Escape From Tarkov
+- Hunt Showdown
+- Arma Reforger
+
+**FAQ:** 
+- Question: **Will I get banned from \<game/service\> for using this?**
+- Answer: **No. You will not be banned for using this tool**, as it does not read or modify memory of any games/applications. Rather, it adjusts the hardware gamma setting of your selected monitor (in the same manner as your monitor OSD menu) and adjusts the color saturation ("digital vibance") of your graphics using the NVIDIA driver, just the same as in NVIDIA Control Panel.
+
 
 Don't care about hotkeying display settings? Just want to explore your display settings more closely?
 - You should check out: https://github.com/rockowitz/ddcui
@@ -31,10 +43,6 @@ Don't care about hotkeying display settings? Just want to explore your display s
 TODO Insert Demo GIF
 
 `Gamma level changes not visible in gif due to hardware gamma adjustment, not software.`
-
-FAQ: 
-- Question: **Will I get banned from \<game/service\> for using this?**
-- Answer: **No. You will not be banned for using this tool**, as it does not read or modify memory of any games/applications. Rather, it adjusts the hardware gamma setting of your selected monitor (in the same manner as your monitor OSD menu) and adjusts the color saturation ("digital vibance") of your graphics using the NVIDIA driver, just the same as in NVIDIA Control Panel.
 
 
 NOTES:
