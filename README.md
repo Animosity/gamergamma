@@ -107,5 +107,4 @@ Output of nvibrant ("Normal output" upon which its usage is based):
 - quality: include dependencies (as distributables) or install helper
 - polish: minimize to tray
 - polish: normalize gamma value range to typical brightness curve range
-- flair: preset pane title reactions to global hotkey recognition
 - quality: better compatibility (need users)
