@@ -1,9 +1,9 @@
 # gamergamma
 ## Developed with colorblind gamers in mind. 
-This _Linux_ tool provides 
-- ** user-configurable hotkeys to adjust the hardware gamma (display monitor) & color vibrance (NVIDIA & display monitor)**
-- ** 3 hotkey-able presets **
-- ** Monitor settings restoration (to the original settings detected when gamergamma was first opened) **
+**This _Linux_ tool provides** 
+- **configurable hotkeys** to **adjust the hardware gamma** (display monitor) **& color vibrance** (NVIDIA & display monitor)
+- **3 hotkey-able presets**
+- **Monitor settings restoration** (to your settings that were detected when gamergamma was opened for the first time)
 
 
 Are you on _Windows_? Try one of these other apps for hotkey-able display settings in your games:
