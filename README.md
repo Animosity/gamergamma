@@ -7,9 +7,8 @@ This _Linux_ tool provides improved vision in low contrast scenes in any game/vi
 - Local settings file
 - Doesn't violate game Terms of Service
 - ROOT NOT REQUIRED
-- 
-TODO Insert Demo GIF
 
+`TODO` Insert Demo GIF
 `Gamma level changes not visible in gif due to hardware gamma adjustment, not software.`
 
 ## Used for games like:
