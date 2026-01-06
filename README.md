@@ -7,6 +7,10 @@ This _Linux_ tool provides improved vision in low contrast scenes in any game/vi
 - Local settings file
 - Doesn't violate game Terms of Service
 - ROOT NOT REQUIRED
+- 
+TODO Insert Demo GIF
+
+`Gamma level changes not visible in gif due to hardware gamma adjustment, not software.`
 
 ## Used for games like:
 - ARC Raiders
@@ -41,9 +45,7 @@ Don't care about hotkeying display settings? Just want to explore your display s
 7. Click the **Preset # (\<HotKey\>)** title to reconfigure the preset's hotkey to your choice.
 8. Use your hotkeys in any game/app of your choice.
 
-TODO Insert Demo GIF
 
-`Gamma level changes not visible in gif due to hardware gamma adjustment, not software.`
 
 
 NOTES:
