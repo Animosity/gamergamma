@@ -8,12 +8,7 @@ This _Linux_ tool provides improved vision in low contrast scenes in any game/vi
 - Doesn't violate game Terms of Service
 - ROOT NOT REQUIRED
 
-Are you on _Windows_? Try one of these other apps for hotkey-able display settings in your games:
-- https://github.com/qlintenFX/KeyedColors
-- https://github.com/maxgodman/GammaHotkey
-- https://github.com/panicaz/tarkov-settings-fullscreen-hotkey 
-
-Used for games like:
+## Used for games like:
 - ARC Raiders
 - Escape From Tarkov
 - Hunt Showdown
@@ -24,10 +19,15 @@ Used for games like:
 - Answer: **No. You will not be banned for using this tool**, as it does not read or modify memory of any games/applications. Rather, it adjusts the hardware gamma setting of your selected monitor (in the same manner as your monitor OSD menu) and adjusts the color saturation ("digital vibance") of your graphics using the NVIDIA driver, just the same as in NVIDIA Control Panel.
 
 
+Are you on _Windows_? Try one of these other apps for hotkey-able display settings in your games:
+- https://github.com/qlintenFX/KeyedColors
+- https://github.com/maxgodman/GammaHotkey
+- https://github.com/panicaz/tarkov-settings-fullscreen-hotkey 
+
 Don't care about hotkeying display settings? Just want to explore your display settings more closely?
 - You should check out: https://github.com/rockowitz/ddcui
 
-**How to use:**
+# FOR USERS - How to use:
 1. Install external dependencies:
    -  [`ddcutil` (for monitor/hardware gamma control)](https://github.com/rockowitz/ddcutil)
    -  [`nvibrant-bin` (NVIDIA-only)](https://github.com/Tremeschin/nvibrant)
