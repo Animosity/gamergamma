@@ -6,7 +6,7 @@ import os, subprocess, shutil
 import webbrowser
 from pynput import keyboard as pynput_keyboard
 
-VERSION = "0.3.0"
+VERSION = "0.4.0"
 MAINTAINERS = ["Animosity"]
 
 CONFIG_FILE = "gg_presets.json"
@@ -15,9 +15,9 @@ _hotkey_listener = None
 _hotkey_map = {}
 
 DEFAULT_PRESETS = {
-    "1": {"display": 1, "gamma": 128, "vibrance": 0, "vibrance_mode": "nvidia", "hotkey": "alt+1"},
-    "2": {"display": 1, "gamma": 144, "vibrance": 512, "vibrance_mode": "nvidia", "hotkey": "alt+2"},
-    "3": {"display": 1, "gamma": 255, "vibrance": 1023, "vibrance_mode": "nvidia", "hotkey": "alt+3"},
+    "1": {"gamma": 128, "vibrance": 0, "vibrance_mode": "nvidia", "hotkey": "alt+1"},
+    "2": {"gamma": 144, "vibrance": 512, "vibrance_mode": "nvidia", "hotkey": "alt+2"},
+    "3": {"gamma": 255, "vibrance": 1023, "vibrance_mode": "nvidia", "hotkey": "alt+3"},
 }
 
 
@@ -49,22 +49,57 @@ def detect_monitors():
 
 def load_presets():
     if not os.path.exists(CONFIG_FILE):
+        # Initialize with per-monitor structure
         data = {
-            "presets": DEFAULT_PRESETS,
+            "presets": {},
             "monitors": fetch_monitor_vcp_state()
         }
+        # Create default presets for each detected monitor
+        monitors = detect_monitors()
+        for display, _ in monitors:
+            data["presets"][str(display)] = {
+                "1": DEFAULT_PRESETS["1"].copy(),
+                "2": DEFAULT_PRESETS["2"].copy(),
+                "3": DEFAULT_PRESETS["3"].copy(),
+            }
         save_presets(data)
         return data
 
     with open(CONFIG_FILE, "r") as f:
         data = json.load(f)
 
-    # Backfill presets if older format
+    # Migration: Check if old format (presets not keyed by display)
     data.setdefault("presets", {})
-    for pid, defaults in DEFAULT_PRESETS.items():
-        data["presets"].setdefault(pid, {})
-        for k, v in defaults.items():
-            data["presets"][pid].setdefault(k, v)
+
+    # If old format detected (preset IDs at top level with 'display' key)
+    if data["presets"] and "1" in data["presets"] and "display" in data["presets"].get("1", {}):
+        # Migrate to new format
+        old_presets = data["presets"]
+        data["presets"] = {}
+
+        # Group by display
+        for pid in ["1", "2", "3"]:
+            if pid in old_presets:
+                display = str(old_presets[pid].get("display", 1))
+                if display not in data["presets"]:
+                    data["presets"][display] = {}
+
+                # Remove 'display' field and store under monitor
+                preset_copy = old_presets[pid].copy()
+                preset_copy.pop("display", None)
+                data["presets"][display][pid] = preset_copy
+
+        save_presets(data)
+
+    # Backfill presets for all detected monitors
+    monitors = detect_monitors()
+    for display, _ in monitors:
+        display_key = str(display)
+        data["presets"].setdefault(display_key, {})
+        for pid, defaults in DEFAULT_PRESETS.items():
+            data["presets"][display_key].setdefault(pid, {})
+            for k, v in defaults.items():
+                data["presets"][display_key][pid].setdefault(k, v)
 
     data.setdefault("monitors", {})
     return data
@@ -309,16 +344,20 @@ def apply_preset(display, gamma, vibrance_mode, vibrance):
 # ----------------------------
 
 class PresetPane(ttk.Frame):
-    def __init__(self, parent, preset_id, title, presets, get_display):
+    def __init__(self, parent, preset_id, title, all_presets, get_display):
         super().__init__(parent, padding=10, relief="ridge")
         self.preset_id = str(preset_id)
-        self.presets = presets
+        self.all_presets = all_presets  # Store all presets (per-monitor structure)
         self.get_display = get_display
 
         self.base_title = f"Preset {self.preset_id}"
+
+        # Get current preset for initial display
+        current_preset = self._get_current_preset()
+
         self.title_label = ttk.Label(
             self,
-            text=f"{self.base_title} ({self.presets[self.preset_id]['hotkey'].upper()})",
+            text=f"{self.base_title} ({current_preset['hotkey'].upper()})",
             font=("Sans", 12, "bold"),
             cursor="hand2",
             foreground="black"
@@ -338,7 +377,7 @@ class PresetPane(ttk.Frame):
         g_frame = ttk.Frame(self)
         g_frame.pack(fill="x")
 
-        self.gamma = tk.IntVar(value=presets[self.preset_id]["gamma"])
+        self.gamma = tk.IntVar(value=current_preset["gamma"])
 
         self.gamma_entry = ttk.Entry(g_frame, width=6, textvariable=self.gamma)
         self.gamma_entry.pack(side="right", padx=5)
@@ -356,7 +395,7 @@ class PresetPane(ttk.Frame):
         ttk.Label(self, text="Vibrance Source").pack(anchor="w", pady=(10, 0))
 
         self.vibrance_mode = tk.StringVar(
-            value=presets[self.preset_id].get("vibrance_mode", "NVIDIA")
+            value=current_preset.get("vibrance_mode", "nvidia")
         )
 
         mode_frame = ttk.Frame(self)
@@ -377,7 +416,7 @@ class PresetPane(ttk.Frame):
         self.vib_nvidia_frame = ttk.Frame(self)
         self.vib_nvidia_frame.pack(fill="x")
 
-        self.vibrance = tk.IntVar(value=presets[self.preset_id]["vibrance"])
+        self.vibrance = tk.IntVar(value=current_preset["vibrance"])
 
         self.vib_entry = ttk.Entry(self.vib_nvidia_frame, width=6, textvariable=self.vibrance)
         self.vib_entry.pack(side="right", padx=5)
@@ -396,7 +435,7 @@ class PresetPane(ttk.Frame):
 
         self.vib_ddc_frame = ttk.Frame(self)
 
-        self.ddc_vibrance = tk.IntVar(value=presets[self.preset_id]["vibrance"])
+        self.ddc_vibrance = tk.IntVar(value=current_preset["vibrance"])
 
         self.ddc_entry = ttk.Entry(self.vib_ddc_frame, width=6, textvariable=self.ddc_vibrance)
         self.ddc_entry.pack(side="right", padx=5)
@@ -415,8 +454,36 @@ class PresetPane(ttk.Frame):
         self.button_save = ttk.Button(self.button_frame, text="Save Preset", command=self.save).pack()
         self.button_apply = ttk.Button(self.button_frame, text="Apply Preset", command=self.apply).pack()
 
-        
+
         self.update_ddc_slider_limits()
+        self._update_vibrance_ui()
+
+    # ---- Helper to get current monitor's preset ----
+    def _get_current_preset(self):
+        """Get the preset for the currently selected monitor"""
+        display = str(self.get_display())
+        return self.all_presets.get(display, {}).get(self.preset_id, DEFAULT_PRESETS[self.preset_id].copy())
+
+    def reload_from_monitor(self):
+        """Reload UI from the currently selected monitor's presets"""
+        current_preset = self._get_current_preset()
+
+        # Update all UI elements with the current monitor's preset values
+        self.gamma.set(current_preset["gamma"])
+        self.gamma_slider.set(current_preset["gamma"])
+
+        self.vibrance_mode.set(current_preset.get("vibrance_mode", "nvidia"))
+        self.vibrance.set(current_preset["vibrance"])
+        self.vib_slider.set(current_preset["vibrance"])
+        self.ddc_vibrance.set(current_preset["vibrance"])
+        self.ddc_slider.set(current_preset["vibrance"])
+
+        # Update title with hotkey
+        self.title_label.configure(
+            text=f"{self.base_title} ({current_preset['hotkey'].upper()})"
+        )
+
+        # Refresh vibrance UI
         self._update_vibrance_ui()
 
 
@@ -490,7 +557,8 @@ class PresetPane(ttk.Frame):
 
 
     def refresh_title(self):
-        hotkey = self.presets[self.preset_id]["hotkey"]
+        current_preset = self._get_current_preset()
+        hotkey = current_preset["hotkey"]
         self.title_label.configure(
             text=f"{self.base_title} ({hotkey.upper()})"
     )
@@ -521,7 +589,7 @@ class PresetPane(ttk.Frame):
                 self.title_label.configure(font=self.throb_title_font)
             else:
                 self.title_label.configure(font=self.base_title_font)
-            
+
             self.title_label.configure(foreground=colors[i])
             self._throb_after_id = self.after(step_ms, animate, i + 1)
 
@@ -532,7 +600,15 @@ class PresetPane(ttk.Frame):
     # ---- Preset actions ----
 
     def save(self):
-        p = self.presets[self.preset_id]
+        display = str(self.get_display())
+
+        # Ensure structure exists for this monitor
+        if display not in self.all_presets:
+            self.all_presets[display] = {}
+        if self.preset_id not in self.all_presets[display]:
+            self.all_presets[display][self.preset_id] = DEFAULT_PRESETS[self.preset_id].copy()
+
+        p = self.all_presets[display][self.preset_id]
         p["gamma"] = self.gamma.get()
         p["vibrance_mode"] = self.vibrance_mode.get()
 
@@ -541,8 +617,10 @@ class PresetPane(ttk.Frame):
         else:
             p["vibrance"] = self.ddc_vibrance.get()
 
-        p["display"] = self.get_display()
-        save_presets(self.presets)
+        # Load the full data structure, update presets, and save
+        data = load_presets()
+        data["presets"] = self.all_presets
+        save_presets(data)
 
 
     def apply(self):
@@ -563,10 +641,12 @@ class PresetPane(ttk.Frame):
 
         win.resizable(False, False)
 
+        current_preset = self._get_current_preset()
+
         ttk.Label(win, text="Current Hotkey:").grid(row=0, column=0, padx=10, pady=5, sticky="w")
         ttk.Label(
             win,
-            text=self.presets[self.preset_id]["hotkey"],
+            text=current_preset["hotkey"],
             font=("Sans", 10, "bold")
         ).grid(row=0, column=1, padx=10, pady=5, sticky="w")
 
@@ -613,8 +693,20 @@ class PresetPane(ttk.Frame):
                 messagebox.showerror("Error", "Hotkey cannot be empty.")
                 return
 
-            self.presets[self.preset_id]["hotkey"] = new
-            save_presets(self.presets)
+            display = str(self.get_display())
+
+            # Ensure structure exists
+            if display not in self.all_presets:
+                self.all_presets[display] = {}
+            if self.preset_id not in self.all_presets[display]:
+                self.all_presets[display][self.preset_id] = DEFAULT_PRESETS[self.preset_id].copy()
+
+            self.all_presets[display][self.preset_id]["hotkey"] = new
+
+            # Load the full data structure, update presets, and save
+            data = load_presets()
+            data["presets"] = self.all_presets
+            save_presets(data)
 
             self.refresh_title()
             listener.stop()
@@ -636,7 +728,8 @@ def setup_hotkeys(container):
 
     for child in container.winfo_children():
         if isinstance(child, PresetPane):
-            hk = child.presets[child.preset_id]["hotkey"]
+            current_preset = child._get_current_preset()
+            hk = current_preset["hotkey"]
 
             # pynput needs all hotkey strings which aren't single characters to be <wrapped>'
             # Look at this ugly piece of work right here.
@@ -778,8 +871,8 @@ def add_dependency_status_bar(root):
 
 def main():
     print(f"gamergamma v{VERSION}\n  created by: github.com/Animosity")
-    #presets = load_presets()
-    presets = load_presets()["presets"]
+    data = load_presets()
+    all_presets = data["presets"]  # This is now per-monitor: {display: {preset_id: {...}}}
     monitors = detect_monitors()
 
     root = tk.Tk()
@@ -805,12 +898,9 @@ def main():
         monitor_map[label] = idx
         display_values.append(label)
 
-    preset_display = presets["1"]["display"]
-
-    for label, idx in monitor_map.items():
-        if idx == preset_display:
-            monitor_var.set(label)
-            break
+    # Set default monitor (first one detected)
+    if display_values:
+        monitor_var.set(display_values[0])
 
     combo = ttk.Combobox(
         top,
@@ -823,7 +913,9 @@ def main():
     def on_monitor_change(_):
         for child in container.winfo_children():
             if isinstance(child, PresetPane):
+                child.reload_from_monitor()  # Load settings for newly selected monitor
                 child.update_ddc_slider_limits()
+        setup_hotkeys(container)  # Re-register hotkeys for the newly selected monitor
 
     combo.bind("<<ComboboxSelected>>", on_monitor_change)
     combo.pack(side="left", padx=(10, 5))
@@ -842,7 +934,8 @@ def main():
 
 
     def get_selected_display():
-        return monitor_map.get(monitor_var.get(), preset_display)
+        selected_label = monitor_var.get()
+        return monitor_map.get(selected_label, monitors[0][0] if monitors else 1)
 
     container = ttk.Frame(root, padding=10)
     container.pack(fill="both", expand=True)
@@ -851,8 +944,8 @@ def main():
         PresetPane(
             container,
             i,
-            f"Preset ({presets[i]['hotkey'].upper()})",
-            presets,
+            f"Preset {i}",
+            all_presets,
             get_selected_display
         ).pack(side="left", expand=True, fill="both", padx=5)
 
